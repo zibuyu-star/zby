@@ -9,6 +9,9 @@ document.addEventListener('DOMContentLoaded', () => {
 // --- 2. 实时保存 ---
 const idInput = document.getElementById('orderIds');
 const msgInput = document.getElementById('message');
+const statusBadge = document.getElementById('statusBadge');
+const statusMeta = document.getElementById('statusMeta');
+const progressBar = document.getElementById('progressBar');
 
 idInput.addEventListener('input', () => localStorage.setItem('TIKTOK_IDS', idInput.value));
 msgInput.addEventListener('input', () => localStorage.setItem('TIKTOK_MSG', msgInput.value));
@@ -20,6 +23,28 @@ document.getElementById('clearBtn').addEventListener('click', () => {
         localStorage.setItem('TIKTOK_IDS', "");
     }
 });
+
+function updateStatusUI({ running, paused, current, total }) {
+    const safeTotal = Number.isFinite(total) && total > 0 ? total : 0;
+    const safeCurrent = Number.isFinite(current) && current >= 0 ? current : 0;
+    const progress = safeTotal ? Math.min(100, Math.round((safeCurrent / safeTotal) * 100)) : 0;
+
+    progressBar.style.width = `${progress}%`;
+
+    if (running) {
+        statusBadge.textContent = paused ? "已暂停" : "运行中";
+        statusBadge.className = `status-badge ${paused ? "paused" : "running"}`;
+        if (safeTotal) {
+            statusMeta.textContent = `进度：${safeCurrent}/${safeTotal}（${progress}%）`;
+        } else {
+            statusMeta.textContent = "任务运行中…";
+        }
+    } else {
+        statusBadge.textContent = "未运行";
+        statusBadge.className = "status-badge idle";
+        statusMeta.textContent = "等待开始…";
+    }
+}
 
 // --- 4. 辅助函数：发送消息给当前 Tab ---
 async function sendMsgToContent(messageObj) {
@@ -57,15 +82,29 @@ async function sendMsgToContent(messageObj) {
     }
 }
 
+chrome.runtime.onMessage.addListener((message) => {
+    if (message && message.type === "STATUS_UPDATE") {
+        updateStatusUI(message.payload || {});
+    }
+});
+
 // --- 5. 开始运行 ---
 document.getElementById('runBtn').addEventListener('click', () => {
     const ids = idInput.value.trim();
     const msg = msgInput.value;
     if (!ids) return alert("请输入订单 ID！");
 
+    const orderIds = ids.split('\n').map(s => s.trim()).filter(Boolean);
+    updateStatusUI({
+        running: true,
+        paused: false,
+        current: 0,
+        total: orderIds.length
+    });
+
     sendMsgToContent({
         type: "START",
-        orderIds: ids.split('\n').map(s => s.trim()).filter(Boolean),
+        orderIds,
         message: msg
     });
 });

@@ -3,6 +3,28 @@
 // ==========================================
 let isPaused = false;
 let isRunning = false;
+let totalOrders = 0;
+let currentIndex = 0;
+
+// ==========================================
+// 日志控制
+// ==========================================
+const DEBUG = true;
+const logInfo = (...args) => DEBUG && console.log('[TikTok助手]', ...args);
+const logWarn = (...args) => DEBUG && console.warn('[TikTok助手]', ...args);
+const logError = (...args) => DEBUG && console.error('[TikTok助手]', ...args);
+
+function sendStatusUpdate() {
+    chrome.runtime.sendMessage({
+        type: "STATUS_UPDATE",
+        payload: {
+            running: isRunning,
+            paused: isPaused,
+            current: currentIndex,
+            total: totalOrders
+        }
+    });
+}
 
 // ==========================================
 // 工具函数
@@ -97,7 +119,7 @@ async function ensureOrderIdFilterStrict() {
     await openSelect();
     await sleepLocal(300);
     await chooseOrderId();
-    console.log('[筛选修复] 完成');
+    logInfo('[筛选修复] 完成');
 }
 // ===== 稳定筛选修复结束 =====
 
@@ -124,13 +146,16 @@ function simulateInput(element, value) {
 // ==========================================
 async function runAutomation(orderIds, messageText) {
     // 先严格执行独立版的筛选修复逻辑（点击“全部”+切换为“订单 ID”）
-    try { await ensureOrderIdFilterStrict(); } catch(e) { console.warn('[筛选修复] 跳过/失败：', e); }
+    try { await ensureOrderIdFilterStrict(); } catch(e) { logWarn('[筛选修复] 跳过/失败：', e); }
 
-    if (isRunning) return console.warn('alert 已移除');
+    if (isRunning) return logWarn('alert 已移除');
     isRunning = true;
     isPaused = false;
+    totalOrders = orderIds.length;
+    currentIndex = 0;
+    sendStatusUpdate();
     
-    console.log(`🚀 开始任务，共 ${orderIds.length} 个订单`);
+    logInfo(`🚀 开始任务，共 ${orderIds.length} 个订单`);
 
     // --- 1. 初始化 (切换到订单 ID) ---
     try {
@@ -157,24 +182,26 @@ async function runAutomation(orderIds, messageText) {
                 if(target) { await simulateClick(target); await sleep(1000); }
             }
         }
-    } catch(e) { console.warn("初始化小异常:", e); }
+    } catch(e) { logWarn("初始化小异常:", e); }
 
     // --- 2. 循环处理 ---
     for (let i = 0; i < orderIds.length; i++) {
         // --- ⏸️ 暂停检查点 ---
         while (isPaused) {
-            console.log("⏸️ 任务暂停中... (点击'暂停/继续'以恢复)");
+            logInfo("⏸️ 任务暂停中... (点击'暂停/继续'以恢复)");
             await sleep(1000);
         }
 
         const oid = orderIds[i];
-        console.log(`\n🔵 [${i+1}/${orderIds.length}] 处理订单: ${oid}`);
+        currentIndex = i + 1;
+        sendStatusUpdate();
+        logInfo(`\n🔵 [${i+1}/${orderIds.length}] 处理订单: ${oid}`);
 
         try {
             // A. 输入订单号
             const input = document.querySelector('input[placeholder*="订单"]') || 
                           document.querySelector('input[data-tid="m4b_input_search"]');
-            if(!input) { console.error("找不到搜索框"); continue; }
+            if(!input) { logError("找不到搜索框"); continue; }
             
             simulateInput(input, "");
             await sleep(200);
@@ -186,7 +213,7 @@ async function runAutomation(orderIds, messageText) {
             const searchIcon = document.querySelector('.arco-icon-search');
             if(searchIcon) await simulateClick(searchIcon.closest('.arco-input-group-suffix') || searchIcon);
             
-            console.log("⏳ 等待搜索结果...");
+            logInfo("⏳ 等待搜索结果...");
 
             // C. 找聊天按钮（合并订单：优先选择“状态=内容处理中”的那一条记录）
             let chatBtn = null;
@@ -252,7 +279,7 @@ async function runAutomation(orderIds, messageText) {
                 await simulateClick(chatBtn);
                 await sleepRand(); // 随机等待 2-4s，等待弹窗
             } else {
-                console.warn("⚠️ 没搜到订单或没按钮，跳过");
+                logWarn("⚠️ 没搜到订单或没按钮，跳过");
                 continue;
             }
 
@@ -265,7 +292,7 @@ async function runAutomation(orderIds, messageText) {
             let done = false;
 
             if (remindBtn && !remindBtn.disabled && !remindBtn.classList.contains('arco-btn-disabled')) {
-                console.log("✅ 点击【提醒】");
+                logInfo("✅ 点击【提醒】");
                 await simulateClick(remindBtn);
                 await sleepRand();
                 done = true;
@@ -275,7 +302,7 @@ async function runAutomation(orderIds, messageText) {
             if (!done) {
                 const cardSend = allBtns.find(b => b.innerText.trim()==='发送' && b.classList.contains('m4b-button-link') && b.offsetParent!==null);
                 if(cardSend) {
-                    console.log("✅ 点击卡片【发送】");
+                    logInfo("✅ 点击卡片【发送】");
                     await simulateClick(cardSend);
                     await sleepRand();
                 }
@@ -291,13 +318,13 @@ async function runAutomation(orderIds, messageText) {
                 const sendBtn = allBtns.find(b => b.innerText.trim()==='发送' && b.classList.contains('arco-btn-primary') && !b.classList.contains('m4b-button-link') && b.offsetParent!==null);
                 if(sendBtn) {
                     await simulateClick(sendBtn);
-                    console.log("💬 消息已发送");
+                    logInfo("💬 消息已发送");
                     await sleepRand();
                 }
             }
 
             // F. 关闭弹窗 (精准匹配 SVG)
-            console.log("❎ 关闭弹窗");
+            logInfo("❎ 关闭弹窗");
             
             // 优先策略：查找包含您提供的 SVG 路径的图标
             // 这个 SVG path 对应的是那个绿色的关闭叉叉
@@ -330,12 +357,13 @@ async function runAutomation(orderIds, messageText) {
             await sleep(1500); // 冷却
 
         } catch (err) {
-            console.error(`❌ 订单 ${oid} 异常:`, err);
+            logError(`❌ 订单 ${oid} 异常:`, err);
         }
     }
     
     isRunning = false;
-    console.warn('alert 已移除');
+    sendStatusUpdate();
+    logWarn('alert 已移除');
 }
 
 // 监听消息
@@ -344,8 +372,9 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
         runAutomation(req.orderIds, req.message);
     } else if (req.type === "TOGGLE_PAUSE") {
         isPaused = !isPaused;
-        console.log(isPaused ? "⏸️ 已暂停" : "▶️ 继续运行");
+        logInfo(isPaused ? "⏸️ 已暂停" : "▶️ 继续运行");
+        sendStatusUpdate();
         // 给用户一个反馈，虽然是在控制台
-        if(isPaused) console.warn('alert 已移除');
+        if(isPaused) logWarn('alert 已移除');
     }
 });
