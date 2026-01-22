@@ -7,6 +7,22 @@
     
     /* 标题与标签 */
     label { font-size: 12px; font-weight: bold; margin-bottom: 6px; display: block; }
+
+    /* 运行状态 */
+    .status-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .status-title { font-size: 12px; font-weight: bold; color: #4e5969; }
+    .status-badge {
+      padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;
+      background: #e5e6eb; color: #4e5969;
+    }
+    .status-badge.running { background: #e8f7ef; color: #00b96b; }
+    .status-badge.paused { background: #fff4e5; color: #ff7d00; }
+    .status-badge.idle { background: #f2f3f5; color: #86909c; }
+    .status-meta { font-size: 11px; color: #86909c; margin-top: 6px; }
+
+    /* 进度条 */
+    .progress-wrap { background: #e5e6eb; border-radius: 999px; height: 8px; overflow: hidden; }
+    .progress-bar { height: 100%; width: 0%; background: linear-gradient(90deg, #fe2c55, #ff7d00); transition: width 0.3s ease; }
     
     /* 文本框容器 (用于定位清空按钮) */
     .input-wrapper { position: relative; margin-bottom: 12px; }
@@ -61,6 +77,15 @@
   <label>2. 发送话术</label>
   <textarea id="message" placeholder="输入发送给达人的内容..."></textarea>
   
+  <div class="status-row">
+    <div class="status-title">运行状态</div>
+    <div id="statusBadge" class="status-badge idle">未运行</div>
+  </div>
+  <div class="progress-wrap" aria-label="任务进度">
+    <div id="progressBar" class="progress-bar"></div>
+  </div>
+  <div id="statusMeta" class="status-meta">等待开始…</div>
+
   <div class="tips">💡 输入内容会自动记忆。运行中点击“暂停/继续”可控制流程。</div>
   
   <div class="btn-group">
