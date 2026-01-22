@@ -1,0 +1,39 @@
+{
+  "manifest_version": 3,
+  "name": "TikTok Shop 助手4.0",
+  "version": "3.9",
+  "description": "自动记忆 + 暂停功能 + 智能循环 + 一键清空 + 严格版筛选修复合并 + 私信阶段随机等待2-4s + 免刷新注入 + 去除所有弹窗提示 + 合并订单优先内容处理中 + 精确匹配状态DOM + RPA 风格专业头像",
+  "permissions": [
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://affiliate.tiktokshopglobalselling.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://affiliate.tiktokshopglobalselling.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_end"
+    }
+  ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

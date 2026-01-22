@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { width: 340px; padding: 15px; font-family: 'Segoe UI', sans-serif; background: #f2f3f5; color: #333; }
+    
+    /* 标题与标签 */
+    label { font-size: 12px; font-weight: bold; margin-bottom: 6px; display: block; }
+    
+    /* 文本框容器 (用于定位清空按钮) */
+    .input-wrapper { position: relative; margin-bottom: 12px; }
+    
+    /* 文本框样式 */
+    textarea { 
+      width: 100%; height: 120px; box-sizing: border-box; 
+      border: 1px solid #ccc; border-radius: 4px; padding: 8px; 
+      font-size: 13px; font-family: monospace; resize: vertical;
+    }
+    textarea:focus { border-color: #fe2c55; outline: none; }
+    #message { height: 80px; }
+
+    /* 一键清空按钮 (悬浮在右下角) */
+    .clear-btn {
+      position: absolute; bottom: 8px; right: 8px;
+      background: rgba(0,0,0,0.1); color: #666;
+      border: none; border-radius: 3px;
+      font-size: 11px; padding: 2px 6px; cursor: pointer;
+      transition: 0.2s;
+    }
+    .clear-btn:hover { background: #fe2c55; color: white; }
+
+    /* 底部按钮组 */
+    .btn-group { display: flex; gap: 10px; margin-top: 10px; }
+    
+    /* 主按钮 */
+    button.primary-btn { 
+      flex: 2; padding: 12px; background: #fe2c55; color: white; 
+      border: none; border-radius: 4px; font-weight: bold; cursor: pointer; 
+    }
+    button.primary-btn:hover { background: #e0254b; }
+
+    /* 暂停按钮 */
+    button.pause-btn {
+      flex: 1; padding: 12px; background: #ff9f1a; color: white;
+      border: none; border-radius: 4px; font-weight: bold; cursor: pointer;
+    }
+    button.pause-btn:hover { background: #e58e13; }
+
+    .tips { font-size: 11px; color: #86909c; margin-bottom: 15px; border-bottom: 1px solid #e5e6eb; padding-bottom: 10px; }
+  </style>
+</head>
+<body>
+
+  <label>1. 输入订单 ID</label>
+  <div class="input-wrapper">
+    <textarea id="orderIds" placeholder="粘贴订单ID，一行一个..."></textarea>
+    <button id="clearBtn" class="clear-btn" title="清空内容">清空</button>
+  </div>
+  
+  <label>2. 发送话术</label>
+  <textarea id="message" placeholder="输入发送给达人的内容..."></textarea>
+  
+  <div class="tips">💡 输入内容会自动记忆。运行中点击“暂停/继续”可控制流程。</div>
+  
+  <div class="btn-group">
+    <button id="runBtn" class="primary-btn">开始运行</button>
+    <button id="pauseBtn" class="pause-btn">暂停/继续</button>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
